@@ -4,3 +4,7 @@ python-dateutil
 networkx
 scikit-learn
 numpy
+matplotlib
+seaborn
+scipy
+shap
