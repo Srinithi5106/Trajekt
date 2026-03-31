@@ -116,4 +116,14 @@ The classification relies on a **Gradient Boosting Classifier (GBM)**, a tree-ba
 3. **Non-Linear Decision Boundaries:** 
     * Rather than saying "If emails < 10, then fired", the classification logic creates nuanced structural rules. *Example: If `clustering < 0.05` AND `cross_closure` is near 0, the probability of being `Isolated` increases significantly.*
     * It critically maps the trajectory over static measures. *Example: If an employee's `tb_3m_avg` (Temporal Betweenness 3-month average) is very high, BUT their current `tb_trend` is deeply negative, the model classifies them as `Resigned` (Flight Risk)* because their influence is actively bleeding out of the network month-over-month.
-4. **Softmax Output:** The classifier traverses these trees and outputs a probability array (e.g., 85% Resigned, 10% Fired, 5% Stable). It assigns the absolute classification based on the highest percentage, which translates directly to the underlying `confidence` metric visualized in the dashboard. 
+4. **Softmax Output:** The classifier traverses these trees and outputs a probability array (e.g., 85% Resigned, 10% Fired, 5% Stable). It assigns the absolute classification based on the highest percentage, which translates directly to the underlying `confidence` metric visualized in the dashboard.
+
+---
+
+## 7. Speaker Notes / Pitch Script (For Presenting to Stakeholders)
+Use these high-level talking points when pitching the `predict_new_data.py` capability and pipeline logic to management or technical review boards:
+
+* **The Problem:** "Currently, organizations only find out an employee is siloed or burning out when it's too late—when they actually resign or the project fails. HR analytics today rely on surveys, which are biased and lagging."
+* **Our Solution:** "We've built Trajekt: a predictive, multi-layer network pipeline. It fuses physical workplace interactions (proximity data) with digital communications (emails). By mapping the topology of *how* people talk—not *what* they say—we preserve 100% privacy while mathematically forecasting career risks."
+* **How We Predict (The Criteria):** "Our ML model looks for behavioral network signatures. For example, if we see an employee's *Temporal Betweenness* (their influence over information flow) dropping steadily for 3 months, they are flagged as a Flight Risk (`resigned`). If their *Local Clustering* drops near zero (they talk to people, but their contacts never talk to each other), they are flagged as `isolated`."
+* **Live Prediction Tool (`predict_new_data.py`):** "But this isn't just a historical study. We built an active Command Line Interface tool. If you hand me a new CSV of Slack logs or email metadata from any new organization right now, I can run `python predict_new_data.py`, and it will instantly map the network, score the employees, and pop-up live visual heatmaps showing you exactly who is at risk of leaving your company next month." 
