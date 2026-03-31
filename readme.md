@@ -1,85 +1,97 @@
-# Data Ingestion – Network Science Project
+# Trajekt - Multi-Layer Network Analysis (Enron & SocioPatterns)
 
-# Cleaned datasets : https://drive.google.com/drive/folders/1UQFidq_ge-iEu8CQd0jZHxY4L2HAzYZ7?usp=drive_link
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![NetworkX](https://img.shields.io/badge/NetworkX-3.0+-green.svg)](https://networkx.org/)
 
-## Overview
+## 🌐 Overview
 
-This module processes raw Enron email data and SocioPatterns workplace data to generate clean, structured datasets for multi-layer network analysis.
+Trajekt is a network science project focused on multi-layer network analysis of organizational communication and physical proximity. It integrates the **Enron Email Dataset** with the **SocioPatterns Workplace Contacts** to analyze organizational dynamics, information flow, and social structures.
 
----
-
-## Datasets Used
-
-* Enron Email Dataset (maildir format)
-* SocioPatterns Workplace Contacts (InVS13)
+This project implements a modular pipeline for data ingestion, graph construction, and advanced network diagnostics, including homophily analysis and structural hole detection.
 
 ---
 
-## Features
+## 📊 Datasets
 
-* Email parsing from raw maildir
-* Email normalization and cleaning
-* Multi-recipient handling (To + Cc)
-* Temporal filtering (1999–2002)
-* Duplicate and self-loop removal
-* Department inference
-* Weighted network construction
-* Sampling (top 200 users)
+1.  **Enron Email Dataset**: A large collection of internal emails from the Enron Corporation (1999–2002).
+2.  **SocioPatterns Workplace Contacts (InVS13)**: High-resolution temporal data of face-to-face proximity in an office environment.
+
+> [!NOTE]
+> Cleaned datasets can be found [here](https://drive.google.com/drive/folders/1UQFidq_ge-iEu8CQd0jZHxY4L2HAzYZ7?usp=drive_link).
 
 ---
 
-## How to Run
+## 🛠️ Features & Capabilities
 
-### 1. Install dependencies
+### 1. Data Ingestion & Processing
+*   **Raw Email Parsing**: Extracts sender, recipient, and timestamps from the Enron maildir.
+*   **Temporal Filtering**: Restricts analysis to the active period (1999–2002).
+*   **Department Inference**: Maps individuals to their respective departments based on folder structures and metadata.
+*   **SocioPatterns Integration**: Normalizes physical contact data into a weighted temporal graph.
 
+### 2. Network Construction (`src/graph/`)
+*   **Email Layer (E₁)**: Directed/Undirected weighted graph representing digital communication volume.
+*   **Proximity Layer (E₂)**: Undirected weighted graph representing total physical contact duration.
+*   **Sampling**: Efficient processing using a sampled graph of the top 200 most active users for complex metrics.
+
+### 3. Advanced Analysis (`src/analysis/`)
+*   **Coleman Homophily Index**: Measures the degree to which individuals connect with others in their same department, normalized against a random baseline.
+*   **Burt's Structural Constraint**: Measures the redundancy of a node's network (low constraint identifies "brokers" bridging structural holes).
+*   **Cross-Layer Correlation**: Analyzes the relationship between digital homophily and physical proximity structures using Spearman rank correlation.
+*   **Temporal Betweenness**: Measures node importance over time using time-respecting paths.
+
+---
+
+## 🚀 How to Run
+
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Place datasets
+### 2. Prepare Data
+Ensure the following files are in the `data/` directory:
+*   `maildir/` (Enron raw data - optional if processed CSVs exist)
+*   `email_edges.csv`
+*   `proximity_edges.csv`
+*   `node_departments.csv`
 
-* maildir/ (Enron dataset)
-* tij_InVS13.dat
-* metadata_InVS13.txt
+### 3. Run the Pipeline
+*   **Full Data Ingestion**: `python ingestion_pipeline.py`
+*   **Stage 4 Analysis (Homophily & Constraint)**: `python src/analysis/run_stage4.py`
 
-### 3. Run script
+---
 
-```bash
-python ingestion_pipeline.py
+## 📂 Project Structure
+
+```text
+Trajekt/
+├── data/                    # Processed CSV datasets
+├── src/
+│   ├── ingestion/           # Data loading and cleaning
+│   ├── graph/               # Graph construction logic
+│   ├── analysis/            # Network science metrics
+│   │   ├── homophily.py     # Coleman Index
+│   │   ├── structural_holes.py # Burt's Constraint
+│   │   └── run_stage4.py    # Metrics runner script
+│   └── viz/                 # Visualization utilities
+├── notebooks/               # Exploratory notebooks
+├── ingestion_pipeline.py    # Main data processing script
+└── requirements.txt         # Project dependencies
 ```
 
 ---
 
-## Output Files
+## 📈 Recent Results (Stage 4)
 
-* email_edges.csv (main network)
-* email_edges_aggregated.csv (weighted network)
-* email_edges_sampled.csv (subset)
-* proximity_edges.csv (second layer)
-* node_departments.csv (metadata)
+| Layer     | Avg Coleman Homophily | Avg Burt Constraint | Spearman ρ (H↔C) |
+|-----------|-----------------------|---------------------|------------------|
+| Email     | 0.8814                | 0.2590              | -0.1326          |
+| Proximity | 0.6996                | 0.2599              | +0.4197***       |
 
-Files Included
-1. email_edges.csv (MAIN DATASET)
-Columns: sender, recipient, timestamp, department
-~1.45 million edges
-Temporal email network (1999–2002)
-2. email_edges_aggregated.csv
-Columns: sender, recipient, weight
-Represents number of emails between users
-3. email_edges_sampled.csv
-Subset of top 200 most active users
-Useful for testing and visualization
-4. proximity_edges.csv
-Columns: timestamp, i, j, duration
-Workplace proximity interactions (20-second intervals)
-5. node_departments.csv
-Columns: node_id, department
-Department metadata for SocioPatterns dataset
+***Highly significant positive correlation in the proximity layer (p < 0.001).**
 
-## Notes
+---
 
-* Full datasets are not included due to size constraints
-
-## Status
-
-Pipeline is validated and produces ~1.4M edges from ~500K emails
+## 📜 Status
+Stage 4 (Homophily and Structural Holes) is fully implemented and validated. The pipeline correctly handles large-scale organizational data and provides department-level insights across multiple communication layers.
