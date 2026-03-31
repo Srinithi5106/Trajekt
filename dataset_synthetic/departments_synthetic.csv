@@ -1,0 +1,17 @@
+node_id,department
+user_stable@enron.com,DCAR
+user_promoted@enron.com,DISQ
+user_resigned@enron.com,DMI
+user_fired@enron.com,DSE
+user_bottleneck@enron.com,DST
+user_isolated@enron.com,SCOM
+peer0@enron.com,DCAR
+peer1@enron.com,DCAR
+peer2@enron.com,DISQ
+peer3@enron.com,DISQ
+peer4@enron.com,DMI
+peer5@enron.com,DMI
+peer6@enron.com,DSE
+peer7@enron.com,DSE
+peer8@enron.com,DST
+peer9@enron.com,SCOM
