@@ -218,6 +218,7 @@ def smart_render_image(title, icon, path, container, force_live=False):
         ''', unsafe_allow_html=True)
 
         asset_rendered = False
+        # Try to render from file first
         if not force_live and os.path.exists(path):
             try:
                 with Image.open(path) as img:
@@ -227,10 +228,11 @@ def smart_render_image(title, icon, path, container, force_live=False):
             except:
                 pass
         
+        # Fallback to Live Plotly logic if file missing or force_live is True
         if not asset_rendered:
             if PLOTLY_AVAILABLE:
                 df = load_analytics_data()
-                if "Heatmap" in title:
+                if "Heatmap" in title or "Temporal" in title:
                     fig = px.density_heatmap(df, x="Homophily", y="Constraint", 
                                            height=160, color_continuous_scale='Blues')
                     fig.update_layout(coloraxis_showscale=False)
@@ -244,9 +246,11 @@ def smart_render_image(title, icon, path, container, force_live=False):
                     plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(color="black", size=9)
                 )
-                fig.update_xaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
-                fig.update_yaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
+                fig.update_xaxes(tickfont=dict(color='black'), title_font=dict(color='black'), showgrid=False)
+                fig.update_yaxes(tickfont=dict(color='black'), title_font=dict(color='black'), showgrid=False)
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            else:
+                st.warning("Plotly not installed. Could not render live chart.")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -258,28 +262,35 @@ smart_render_image("Temporal Activity Heatmap", "fa-fire-flame-curved", "outputs
 # 8. Distribution Intelligence Section
 st.markdown('<div class="glass-card"><h3 style="font-size:0.85rem; margin-bottom:4px;">Distribution Intelligence</h3>', unsafe_allow_html=True)
 
-df = load_analytics_data()
-df = df[df["Department"].isin(selected_depts)]
+df_all = load_analytics_data()
+df_filtered = df_all[df_all["Department"].isin(selected_depts)]
 
 tab1, tab2 = st.tabs(["Interactive Analytics", "Raw Matrix Explorer"])
 
 with tab1:
     if PLOTLY_AVAILABLE:
-        fig = px.bar(df.groupby("Department")["Engagement"].mean().reset_index(), 
-                     x="Department", y="Engagement", height=180,
-                     color_discrete_sequence=['#0052ff'])
-        fig.update_layout(
-            margin=dict(l=5, r=5, t=5, b=5),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="black", size=10)
-        )
-        fig.update_xaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
-        fig.update_yaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
-        st.plotly_chart(fig, use_container_width=True)
+        # Grouping to ensure the bar chart has data
+        chart_data = df_filtered.groupby("Department")["Engagement"].mean().reset_index()
+        if not chart_data.empty:
+            fig = px.bar(chart_data, 
+                         x="Department", y="Engagement", height=220,
+                         color_discrete_sequence=['#0052ff'])
+            fig.update_layout(
+                margin=dict(l=5, r=5, t=20, b=5),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color="black", size=10)
+            )
+            fig.update_xaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
+            fig.update_yaxes(tickfont=dict(color='black'), title_font=dict(color='black'))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Please select departments in the sidebar to see data.")
+    else:
+        st.error("Visualization Error: 'plotly' library is missing. Please run 'pip install plotly'.")
 
 with tab2:
-    st.dataframe(df, height=180)
+    st.dataframe(df_filtered, height=220, use_container_width=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
