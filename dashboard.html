@@ -216,14 +216,59 @@
 
 
     <!-- FUTURE TRENDS SECTION -->
-    <h2 class="section-title">🔮 Future Trends & Career Forecasting</h2>
+    <h2 class="section-title">🔮 Machine Learning: Career Outcome Forecasting</h2>
     
-    <div class="grid-3">
+    <div class="grid-2">
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1rem;">Timeline Heatmap</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                Tracking individual employees across sequential months. Colors indicate the AI's predicted organizational state (Stable, Flight Risk, Isolated, etc.) based on network trajectory.
+            </p>
+            <div class="plot-container">
+                <img src="outputs/realdata_timeline_heatmap.png" alt="Timeline Heatmap" onerror="this.src='https://placehold.co/800x600/101623/94a3b8?text=realdata_timeline_heatmap.png\n(Run Analysis to Generate)'">
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1rem;">Organizational Risk Summary</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                High-level aggregate count of employees flagged into specific behavioral risk categories in the most recent time window.
+            </p>
+            <div class="plot-container">
+                <img src="outputs/realdata_risk_summary.png" alt="Risk Summary" onerror="this.src='https://placehold.co/800x600/101623/94a3b8?text=realdata_risk_summary.png\n(Run Analysis to Generate)'">
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="glass-card">
+             <h3 style="margin-bottom: 1rem;">Prediction Confidence Distribution</h3>
+             <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                 Violin chart demonstrating the GBM Model's certainty percentage when mapping structural signatures to specific outcomes.
+             </p>
+             <div class="plot-container">
+                 <img src="outputs/realdata_confidence_distribution.png" alt="Confidence Distribution" onerror="this.src='https://placehold.co/800x400/101623/94a3b8?text=realdata_confidence_distribution.png\n(Run Analysis to Generate)'">
+             </div>
+        </div>
+        
+        <div class="glass-card">
+             <h3 style="margin-bottom: 1rem;">Network Fingerprints (Radar)</h3>
+             <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                 Radar chart proving the underlying topological "fingerprint" of each outcome. Shows why an Isolated node looks mathematically different from a Stable node.
+             </p>
+             <div class="plot-container">
+                 <img src="outputs/realdata_employee_radar.png" alt="Employee Radar Chart" onerror="this.src='https://placehold.co/800x400/101623/94a3b8?text=realdata_employee_radar.png\n(Run Analysis to Generate)'">
+             </div>
+        </div>
+    </div>
+
+    <!-- MODEL PERFORMANCE STATS -->
+    <div class="grid-3" style="margin-top: 3rem;">
         <!-- Interactive Forecasting Chart -->
         <div class="glass-card" style="display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
                 <div>
-                    <h3>Projected Career Outcomes</h3>
+                    <h3>Trajectory Projection (Interactive Demo)</h3>
                     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
                         Simulated prediction trajectories across 2001 - 2002 using Temporal Betweenness and Graph Features.
                     </p>
