@@ -1,0 +1,22 @@
+# Data files
+data/email_edges.csv
+data/email_edges_sampled.csv
+data/email_edges_aggregated.csv
+data/proximity_edges.csv
+data/node_departments.csv
+
+# Raw data
+maildir/
+tij_InVS13.dat
+metadata_InVS13.txt
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Temporary / Log files
+data_inspection.txt
+stage4_output.txt
+_inspect_data.py
+data/stage4_results.csv.tmp
