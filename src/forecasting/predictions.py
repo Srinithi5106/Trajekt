@@ -11,10 +11,11 @@ Supports two modes:
        unseen data.
 
 All six organizational labels are predicted:
-    fired, resigned, bottleneck, isolated, promoted, stable
+    fired, resigned, isolated, promoted, stable
 """
 
 import os
+import time
 import warnings
 import numpy as np
 import pandas as pd
@@ -54,6 +55,7 @@ def _clean_features(df: pd.DataFrame) -> pd.DataFrame:
 def _build_trained_model(
     features_df: pd.DataFrame,
     labels_df: pd.DataFrame,
+    fast_mode: bool = False,
     verbose: bool = True,
 ) -> tuple:
     """
@@ -83,16 +85,36 @@ def _build_trained_model(
     X_scaled = scaler.transform(X)
 
     n_classes = len(le.classes_)
-    gbm = GradientBoostingClassifier(
-        n_estimators=300,
-        max_depth=5,
-        learning_rate=0.05,
-        subsample=0.85,
-        min_samples_leaf=4,
-        min_samples_split=8,
-        max_features="sqrt",
-        random_state=42,
-    )
+    if fast_mode and len(X_scaled) > 200_000:
+        keep = 200_000
+        idx = np.random.default_rng(42).choice(len(X_scaled), size=keep, replace=False)
+        X_scaled = X_scaled[idx]
+        y = y[idx]
+        if verbose:
+            print(f"[Predictions] Fast mode: downsampled training rows to {keep:,}")
+
+    if fast_mode:
+        gbm = GradientBoostingClassifier(
+            n_estimators=120,
+            max_depth=3,
+            learning_rate=0.08,
+            subsample=0.8,
+            min_samples_leaf=8,
+            min_samples_split=12,
+            max_features="sqrt",
+            random_state=42,
+        )
+    else:
+        gbm = GradientBoostingClassifier(
+            n_estimators=300,
+            max_depth=5,
+            learning_rate=0.05,
+            subsample=0.85,
+            min_samples_leaf=4,
+            min_samples_split=8,
+            max_features="sqrt",
+            random_state=42,
+        )
     gbm.fit(X_scaled, y)
 
     if verbose:
@@ -114,6 +136,11 @@ def run_pipeline(
     df_proximity: pd.DataFrame | None = None,
     df_departments: pd.DataFrame | None = None,
     tb_series: pd.DataFrame | None = None,
+    fast_mode: bool = False,
+    max_nodes_per_month: int | None = None,
+    include_isolated_labels: bool | None = None,
+    include_burt_constraint: bool = True,
+    include_cross_closure: bool = True,
     verbose: bool = True,
 ) -> dict:
     """
@@ -129,6 +156,18 @@ def run_pipeline(
         Columns: node_id, department.
     tb_series : DataFrame, optional
         Temporal betweenness series.
+    fast_mode : bool
+        If True, enable speed-oriented feature shortcuts.
+    max_nodes_per_month : int, optional
+        If set, keeps only top-N nodes by degree per month during
+        feature engineering.
+    include_isolated_labels : bool or None
+        Controls isolated-label generation. ``None`` keeps default behavior
+        (enabled in normal mode, disabled in fast mode).
+    include_burt_constraint : bool
+        Whether to compute Burt constraint feature.
+    include_cross_closure : bool
+        Whether to compute cross-layer closure feature.
     verbose : bool
         Print reports to stdout.
 
@@ -151,22 +190,48 @@ def run_pipeline(
     # Step 1 — Labels
     if verbose:
         print("[Predictions] Building career labels …")
-    labels = build_career_labels(df_email)
+    t0 = time.perf_counter()
+    labels = build_career_labels(
+        df_email,
+        fast_mode=fast_mode,
+        include_isolated=include_isolated_labels,
+    )
     if verbose:
         print(f"  → {len(labels)} label rows  |  distribution:")
         print(labels["label"].value_counts().to_string())
+        print(f"  → label step time: {time.perf_counter() - t0:.1f}s")
 
     # Step 2 — Features
     if verbose:
         print("\n[Predictions] Engineering features …")
-    features = engineer_features(df_email, df_proximity, df_departments, tb_series)
+    t1 = time.perf_counter()
+    features = engineer_features(
+        df_email,
+        df_proximity,
+        df_departments,
+        tb_series,
+        fast_mode=fast_mode,
+        max_nodes_per_month=max_nodes_per_month,
+        include_burt_constraint=include_burt_constraint,
+        include_cross_closure=include_cross_closure,
+        verbose=verbose,
+    )
     if verbose:
         print(f"  → {len(features)} feature rows  |  {len(ALL_FEATURES)} features")
+        print(f"  → feature step time: {time.perf_counter() - t1:.1f}s")
 
     # Step 3 — Train
     if verbose:
         print("\n[Predictions] Training model …")
-    model, scaler, le = _build_trained_model(features, labels, verbose=verbose)
+    t2 = time.perf_counter()
+    model, scaler, le = _build_trained_model(
+        features,
+        labels,
+        fast_mode=fast_mode,
+        verbose=verbose,
+    )
+    if verbose:
+        print(f"  → train step time: {time.perf_counter() - t2:.1f}s")
 
     # Step 4 — Predict
     features_clean = _clean_features(features)
@@ -224,6 +289,8 @@ def predict_new(
     df_proximity: pd.DataFrame | None = None,
     df_departments: pd.DataFrame | None = None,
     tb_series: pd.DataFrame | None = None,
+    fast_mode: bool = False,
+    max_nodes_per_month: int | None = None,
 ) -> pd.DataFrame:
     """
     Score new / unseen email data with a pre-trained model.
@@ -250,7 +317,14 @@ def predict_new(
     if df_departments is None:
         df_departments = pd.DataFrame(columns=["node_id", "department"])
 
-    features = engineer_features(df_email_new, df_proximity, df_departments, tb_series)
+    features = engineer_features(
+        df_email_new,
+        df_proximity,
+        df_departments,
+        tb_series,
+        fast_mode=fast_mode,
+        max_nodes_per_month=max_nodes_per_month,
+    )
     features = _clean_features(features)
 
     if features.empty:

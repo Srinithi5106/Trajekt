@@ -361,7 +361,14 @@ def main():
 
     # Step 3: Run pipeline
     print("\n[3/4] Running prediction pipeline...")
-    result = run_pipeline(df_email, df_prox, df_dept, verbose=True)
+    result = run_pipeline(
+        df_email,
+        df_prox,
+        df_dept,
+        fast_mode=True,
+        max_nodes_per_month=3000,
+        verbose=True,
+    )
 
     preds = result["predictions"]
     features = result["features"]

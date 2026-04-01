@@ -8,6 +8,7 @@ Saves visualizations to outputs/.
 import os
 import sys
 import warnings
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -243,6 +244,42 @@ def plot_employee_feature_radar(features: pd.DataFrame, preds: pd.DataFrame, sav
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Run career prediction and plot generation on dataset files."
+    )
+    parser.add_argument(
+        "--full-data",
+        action="store_true",
+        help="Use full datasets without the 100-node / 6-month reduction.",
+    )
+    parser.add_argument(
+        "--no-fast-mode",
+        action="store_true",
+        help="Disable fast mode feature shortcuts (slower but fuller features).",
+    )
+    parser.add_argument(
+        "--max-nodes-per-month",
+        type=int,
+        default=None,
+        help="Optional node cap per month during feature engineering.",
+    )
+    parser.add_argument(
+        "--keep-isolated-labels",
+        action="store_true",
+        help="Generate isolated labels even in fast mode.",
+    )
+    parser.add_argument(
+        "--skip-burt-constraint",
+        action="store_true",
+        help="Skip Burt constraint feature to reduce runtime.",
+    )
+    parser.add_argument(
+        "--skip-cross-closure",
+        action="store_true",
+        help="Skip cross-layer closure feature to reduce runtime.",
+    )
+    args = parser.parse_args()
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     print("=" * 60)
@@ -258,14 +295,17 @@ def main():
         print(f"ERROR: Cannot find {email_path}")
         return
 
-    print("\n[1/4] Loading real data (taking minimal part)...")
+    if args.full_data:
+        print("\n[1/4] Loading real data (full dataset mode)...")
+    else:
+        print("\n[1/4] Loading real data (taking minimal part)...")
     df_email = pd.read_csv(email_path)
     df_prox = pd.read_csv(prox_path) if os.path.exists(prox_path) else None
     df_dept = pd.read_csv(dept_path) if os.path.exists(dept_path) else None
 
     # Align SocioPatterns to Enron and filter down to the smaller subset of overlapping nodes
     print("\n      Aligning SocioPatterns nodes to top Enron subset...")
-    if df_dept is not None and df_prox is not None:
+    if (not args.full_data) and df_dept is not None and df_prox is not None:
         # Get top Enron nodes by degree
         enron_degrees = pd.concat([df_email["sender"], df_email["recipient"]]).value_counts()
         
@@ -294,14 +334,36 @@ def main():
         end_time = start_time + pd.DateOffset(months=6)
         df_email = df_email[df_email["timestamp"] <= end_time]
 
-    print(f"  [+] Emails:      {len(df_email):,} rows (Filtered)")
+    if args.full_data:
+        print(f"  [+] Emails:      {len(df_email):,} rows (Full)")
+    else:
+        print(f"  [+] Emails:      {len(df_email):,} rows (Filtered)")
     if df_prox is not None:
         print(f"  [+] Proximity:   {len(df_prox):,} rows")
     if df_dept is not None:
         print(f"  [+] Departments: {len(df_dept):,} nodes")
 
-    print("\n[2/4] Running prediction pipeline...")
-    result = run_pipeline(df_email, df_prox, df_dept, verbose=True)
+    fast_mode = not args.no_fast_mode
+    mode_tag = "fast mode" if fast_mode else "full-feature mode"
+    print(f"\n[2/4] Running prediction pipeline ({mode_tag})...")
+
+    # Default cap only when fast mode is enabled and user did not set one.
+    if args.max_nodes_per_month is None and fast_mode:
+        node_cap = 3000
+    else:
+        node_cap = args.max_nodes_per_month
+
+    result = run_pipeline(
+        df_email,
+        df_prox,
+        df_dept,
+        fast_mode=fast_mode,
+        max_nodes_per_month=node_cap,
+        include_isolated_labels=(True if args.keep_isolated_labels else None),
+        include_burt_constraint=(not args.skip_burt_constraint),
+        include_cross_closure=(not args.skip_cross_closure),
+        verbose=True,
+    )
 
     preds = result["predictions"]
     features = result["features"]

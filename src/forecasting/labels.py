@@ -9,8 +9,7 @@ Labels
 * **promoted** : a user whose *department* field changes between
   consecutive months.
 * **resigned** : steady decline over 3 months.
-* **fired** : sudden drop to 0.
-* **bottleneck** : high in-degree, low out-degree.
+* **fired** : sudden drop to 0 (or near zero) in a single month.
 * **isolated** : clustering drops near 0.
 """
 
@@ -113,12 +112,23 @@ def _detect_promoted(df_email: pd.DataFrame) -> set:
     return promoted
 
 
-def build_career_labels(df_email: pd.DataFrame) -> pd.DataFrame:
+def build_career_labels(
+    df_email: pd.DataFrame,
+    fast_mode: bool = False,
+    include_isolated: bool | None = None,
+) -> pd.DataFrame:
     vol = _monthly_volume(df_email)
     
     resigned = _detect_resigned(vol)
     fired = _detect_fired(vol)
-    isolated = _detect_isolated(df_email)
+    # Default behavior keeps previous semantics:
+    # - normal mode: include isolated labels
+    # - fast mode: skip isolated labels unless explicitly requested
+    if include_isolated is None:
+        do_isolated = not fast_mode
+    else:
+        do_isolated = bool(include_isolated)
+    isolated = _detect_isolated(df_email) if do_isolated else set()
     promoted = _detect_promoted(df_email)
 
     records = []

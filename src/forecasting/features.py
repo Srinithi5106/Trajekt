@@ -20,6 +20,7 @@ Produces a feature matrix indexed by ``(node, month)`` containing:
 import networkx as nx
 import numpy as np
 import pandas as pd
+import time
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +50,30 @@ def _burt_constraint(G: nx.Graph, node):
         return c.get(node, 1.0)
     except Exception:
         return 1.0
+
+
+def _burt_constraint_map(G: nx.Graph):
+    """
+    Compute Burt's constraint for all nodes in one pass.
+    This is much faster than calling ``nx.constraint`` per node.
+    """
+    U = G.to_undirected() if G.is_directed() else G
+    if U.number_of_nodes() == 0:
+        return {}
+
+    try:
+        raw = nx.constraint(U, U.nodes())
+    except Exception:
+        return {n: 1.0 for n in U.nodes()}
+
+    out = {}
+    for n in U.nodes():
+        v = raw.get(n, 1.0)
+        if v is None or not np.isfinite(v):
+            v = 1.0
+        out[n] = float(v)
+
+    return out
 
 
 def _homophily(G: nx.Graph, node, dept_map: dict):
@@ -135,6 +160,11 @@ def engineer_features(
     df_proximity: pd.DataFrame,
     df_departments: pd.DataFrame,
     tb_series: pd.DataFrame | None = None,
+    fast_mode: bool = False,
+    max_nodes_per_month: int | None = None,
+    include_burt_constraint: bool = True,
+    include_cross_closure: bool = True,
+    verbose: bool = False,
 ) -> pd.DataFrame:
     """
     Build a feature matrix indexed by (node, month).
@@ -150,6 +180,18 @@ def engineer_features(
     tb_series : DataFrame, optional
         Index = nodes, columns = month periods. If ``None``, temporal
         features are filled with zeros.
+    fast_mode : bool
+        If True, enable speed-oriented shortcuts for large datasets:
+        skips Burt constraint and cross-layer closure (filled with defaults).
+    max_nodes_per_month : int, optional
+        If set, keeps only the top-N nodes by degree in each month.
+        Useful to bound runtime on very large snapshots.
+    include_burt_constraint : bool
+        Compute Burt's constraint when True (ignored in fast_mode).
+    include_cross_closure : bool
+        Compute cross-layer closure when True (ignored in fast_mode).
+    verbose : bool
+        Print lightweight progress logs while engineering features.
 
     Returns
     -------
@@ -161,6 +203,8 @@ def engineer_features(
     df_email["month"] = df_email["timestamp"].dt.to_period("M")
 
     months = sorted(df_email["month"].unique())
+    if verbose:
+        print(f"[Features] Months detected: {len(months)}")
 
     # ── department map ─────────────────────────────────────────────
     dept_map: dict = {}
@@ -175,39 +219,69 @@ def engineer_features(
     # ── build proximity graph (aggregated, undirected) ─────────────
     G_prox = nx.Graph()
     if df_proximity is not None and len(df_proximity) > 0:
-        for _, row in df_proximity.iterrows():
-            u, v = str(row["i"]), str(row["j"])
-            if G_prox.has_edge(u, v):
-                G_prox[u][v]["weight"] += 1
-            else:
-                G_prox.add_edge(u, v, weight=1)
+        prox = df_proximity[["i", "j"]].copy()
+        prox["i"] = prox["i"].astype(str)
+        prox["j"] = prox["j"].astype(str)
+
+        if fast_mode:
+            email_nodes = set(df_email["sender"].astype(str)).union(
+                set(df_email["recipient"].astype(str))
+            )
+            prox = prox[
+                prox["i"].isin(email_nodes) & prox["j"].isin(email_nodes)
+            ]
+
+        prox_agg = prox.groupby(["i", "j"]).size().reset_index(name="weight")
+        G_prox.add_weighted_edges_from(
+            prox_agg[["i", "j", "weight"]].itertuples(index=False, name=None)
+        )
+
+    if verbose:
+        print(
+            f"[Features] Proximity graph: {G_prox.number_of_nodes():,} nodes, "
+            f"{G_prox.number_of_edges():,} edges"
+        )
 
     # ── iterate over monthly snapshots ─────────────────────────────
     records = []
+    month_groups = {m: g for m, g in df_email.groupby("month")}
     for idx, month in enumerate(months):
-        snap = df_email[df_email["month"] == month]
+        t_month = time.perf_counter()
+        snap = month_groups[month]
 
         # build directed email graph for this month
         G_email = nx.DiGraph()
-        for _, row in snap.iterrows():
-            s, r = row["sender"], row["recipient"]
-            if G_email.has_edge(s, r):
-                G_email[s][r]["weight"] += 1
-            else:
-                G_email.add_edge(s, r, weight=1)
+        snap_agg = snap.groupby(["sender", "recipient"]).size().reset_index(name="weight")
+        G_email.add_weighted_edges_from(
+            snap_agg[["sender", "recipient", "weight"]].itertuples(index=False, name=None)
+        )
 
-        nodes_in_snap = set(G_email.nodes())
+        U_email = G_email.to_undirected()
+        cluster_map = nx.clustering(U_email)
+
+        nodes_in_snap = list(G_email.nodes())
+        if max_nodes_per_month is not None and len(nodes_in_snap) > max_nodes_per_month:
+            nodes_in_snap = sorted(
+                nodes_in_snap,
+                key=lambda n: G_email.degree(n),
+                reverse=True,
+            )[:max_nodes_per_month]
+
+        do_burt = include_burt_constraint and not fast_mode
+        do_cross = include_cross_closure and not fast_mode
+
+        burt_by_node = _burt_constraint_map(U_email) if do_burt else {}
 
         for node in nodes_in_snap:
             feat = {
                 "node": node,
                 "month": month,
                 "degree": _degree(G_email, node),
-                "clustering": _clustering(G_email, node),
-                "burt_constraint": _burt_constraint(G_email, node),
-                "homophily_email": _homophily(G_email, node, dept_map),
+                "clustering": float(cluster_map.get(node, 0.0)),
+                "burt_constraint": burt_by_node.get(node, 1.0) if do_burt else 1.0,
+                "homophily_email": _homophily(U_email, node, dept_map),
                 "homophily_prox": _homophily(G_prox, node, dept_map),
-                "cross_closure": _cross_closure(G_email, G_prox, node),
+                "cross_closure": _cross_closure(G_email, G_prox, node) if do_cross else 0.0,
             }
 
             # temporal betweenness features
@@ -223,6 +297,13 @@ def engineer_features(
             feat["tb_trend"] = tb_trend
 
             records.append(feat)
+
+        if verbose:
+            print(
+                f"[Features] {idx + 1}/{len(months)} month={month}: "
+                f"nodes={len(nodes_in_snap):,}, edges={G_email.number_of_edges():,}, "
+                f"time={time.perf_counter() - t_month:.1f}s"
+            )
 
     features_df = pd.DataFrame(records)
     return features_df

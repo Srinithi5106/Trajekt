@@ -59,6 +59,17 @@ def main():
         dest="save_model_dir",
         help="Directory to save the trained model for later reuse.",
     )
+    parser.add_argument(
+        "--fast-mode",
+        action="store_true",
+        help="Enable speed-oriented feature shortcuts for large datasets.",
+    )
+    parser.add_argument(
+        "--max-nodes-per-month",
+        type=int,
+        default=None,
+        help="Optional cap: keep only top-N nodes by degree per month.",
+    )
     args = parser.parse_args()
 
     # ── validate input ───────────────────────────────────────────────
@@ -96,6 +107,8 @@ def main():
         df_email,
         df_proximity=df_proximity,
         df_departments=df_departments,
+        fast_mode=args.fast_mode,
+        max_nodes_per_month=args.max_nodes_per_month,
         verbose=True,
     )
 
