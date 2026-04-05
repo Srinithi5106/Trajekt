@@ -1,0 +1,52 @@
+﻿============================================================
+  PHASE 0.5 ΓÇö Data Cleaning Pipeline
+============================================================
+  Source:  C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data
+  Output:  C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data\cleaned
+
+============================================================
+  Cleaning email_edges.csv
+============================================================
+  Loading C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data\email_edges.csv ΓÇª
+  Raw shape: (1449952, 4)
+  Columns:   ['sender', 'recipient', 'timestamp', 'department']
+  Parsing timestamps ΓÇª
+  Time filter: 1,449,952 ΓåÆ 1,449,952 rows
+  Self-loops removed: 0
+  Duplicates removed: 347,697
+  Saved ΓåÆ C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data\cleaned\email_edges_cleaned.csv (1,102,255 rows)
+
+============================================================
+  Cleaning email_edges_aggregated.csv
+============================================================
+  Deriving from cleaned email edges ΓÇª
+  Derived aggregated shape: (303298, 3)
+  Unique nodes: 76,264
+  Filtered to top-200 nodes: 303,298 ΓåÆ 4,903 edges
+  Saved ΓåÆ C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data\cleaned\email_edges_aggregated_cleaned.csv (4,903 rows)
+
+============================================================
+  Cleaning proximity_edges.csv
+============================================================
+  Raw shape: (78249, 4)
+  Columns:   ['timestamp', 'i', 'j', 'duration']
+  Self-loops removed: 0
+  Zero-duration rows removed: 0
+  Aggregated to 4,274 unique pairs
+  Saved ΓåÆ C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data\cleaned\proximity_edges_cleaned.csv (4,274 rows)
+
+============================================================
+  Cleaning node_departments.csv
+============================================================
+  Raw shape: (232, 2)
+  Saved ΓåÆ C:\Users\haris\Downloads\Trajekt-main (2)\Trajekt-main\data\cleaned\node_departments_cleaned.csv (232 rows)
+  Departments: ['Dcar', 'Dg', 'Disq', 'Dmct', 'Dmi', 'Dse', 'Dst', 'Scom', 'Sdoc', 'Sfle', 'Srh', 'Ssi']
+
+============================================================
+  Data Cleaning Complete
+============================================================
+  Files in /data/cleaned/:
+    email_edges_aggregated_cleaned.csv             0.25 MB
+    email_edges_cleaned.csv                        88.77 MB
+    node_departments_cleaned.csv                   0.00 MB
+    proximity_edges_cleaned.csv                    0.05 MB

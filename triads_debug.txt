@@ -1,0 +1,2 @@
+Email: {'unknown': 72134, 'hr': 712}
+Prox: {'Sfle': 3570, 'Dmi': 18841, 'Dcar': 6013, 'Ssi': 1372, 'Dst': 10779, 'Dmct': 7490, 'Dse': 7628, 'Disq': 7052, 'Dg': 566, 'Sdoc': 1068, 'Scom': 1844, 'Srh': 1484}

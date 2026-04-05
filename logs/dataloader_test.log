@@ -1,0 +1,23 @@
+﻿python : Traceback (most recent call 
+last):
+At line:1 char:1
++ python -c "
++ ~~~~~~~~~~~
+    + CategoryInfo          : NotSpeci 
+   fied: (Traceback (most recent call  
+   last)::String) [], RemoteExceptio   
+ n
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+  File "<string>", line 5, in <module>
+    from src.data_loader import 
+get_email_graph, get_proximity_graph, 
+get_monthly_snapshots
+  File 
+"C:\Users\haris\Downloads\Trajekt-main 
+(2)\Trajekt-main\src\data_loader.py", 
+line 27, in <module>
+    import networkx as nx
+ModuleNotFoundError: No module named 
+'networkx'
