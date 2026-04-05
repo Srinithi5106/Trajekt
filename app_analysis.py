@@ -101,29 +101,40 @@ with tab1:
         st.metric("Departments", len(set(nx.get_node_attributes(G_active, "dept").values())))
     
     with col2:
-        # Avoid rendering huge graphs in PyVis which hangs browsers
-        max_nodes = 300
+        max_nodes = 150
         if G_active.number_of_nodes() > max_nodes:
-            st.warning(f"Graph is large ({G_active.number_of_nodes()} nodes). Showing subgraph of top {max_nodes} nodes by degree.")
+            st.warning(f"Showing top 150 nodes by activity. Full graph has {G_active.number_of_nodes()} nodes.")
             degrees = dict(G_active.degree())
             top_nodes = sorted(degrees, key=degrees.get, reverse=True)[:max_nodes]
             G_vis = G_active.subgraph(top_nodes)
         else:
             G_vis = G_active
 
-        # Fix Pyvis node ID string issue
-        net = Network(height="500px", width="100%", bgcolor="#222222", font_color="white", notebook=False)
-        for node, data in G_vis.nodes(data=True):
-            net.add_node(str(node), title=f"Dept: {data.get('dept', 'Unknown')}")
-        for u, v, data in G_vis.edges(data=True):
-            net.add_edge(str(u), str(v), value=data.get('weight', 1))
+        @st.cache_data(show_spinner=False)
+        def get_pyvis_html(nodes, edges, layer):
+            net = Network(height="600px", width="100%", bgcolor="#222222", font_color="white", notebook=False)
+            net.set_options("""
+            var options = {
+              "physics": {
+                "barnesHut": { "gravitationalConstant": -8000, "springLength": 120 },
+                "stabilization": { "iterations": 100, "onlyDynamicEdges": false }
+              }
+            }
+            """)
+            for node, data in nodes:
+                net.add_node(str(node), title=f"Dept: {data.get('dept', 'Unknown')}")
+            for u, v, data in edges:
+                net.add_edge(str(u), str(v), value=data.get('weight', 1))
             
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-            net.save_graph(tmp.name)
-            with open(tmp.name, 'r', encoding='utf-8') as f:
-                html_data = f.read()
-            st.components.v1.html(html_data, height=510)
-        os.unlink(tmp.name)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+                net.save_graph(tmp.name)
+                with open(tmp.name, 'r', encoding='utf-8') as f:
+                    html = f.read()
+            os.unlink(tmp.name)
+            return html
+
+        html_data = get_pyvis_html(list(G_vis.nodes(data=True)), list(G_vis.edges(data=True)), layer_choice)
+        st.components.v1.html(html_data, height=600, scrolling=False)
 
 
 # ---------------------------------------------------------------------------

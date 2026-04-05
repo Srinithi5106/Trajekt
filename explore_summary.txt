@@ -1,0 +1,84 @@
+=== Tree ===
+.
+  app_analysis.py
+  app_prediction.py
+  ingestion_pipeline.py
+  readme.md
+  walkthrough.md
+data
+  email_edges.csv
+  email_edges_aggregated.csv
+  email_edges_sampled.csv
+  features.csv
+  node_departments.csv
+  proximity_edges.csv
+data\cleaned
+  email_edges_aggregated_cleaned.csv
+  email_edges_cleaned.csv
+  node_departments_cleaned.csv
+  proximity_edges_cleaned.csv
+data\models
+  gbm_model.pkl
+  logistic_model.pkl
+  predictions.csv
+  shap_values.pkl
+lib
+lib\bindings
+lib\tom-select
+lib\vis-9.1.2
+logs
+notebooks
+outputs
+scripts
+  clean_data.py
+src
+  data_loader.py
+  __init__.py
+src\analysis
+  evaluation_metrics.py
+  homophily.py
+  structural_holes.py
+  temporal_betweenness.py
+  triadic_closure.py
+  __init__.py
+src\forecasting
+  classifier.py
+  features.py
+  feature_engineering.py
+  labels.py
+  model.py
+  README.md
+  __init__.py
+src\graph
+  email_layer.py
+  proximity_layer.py
+  snapshots.py
+  __init__.py
+src\viz
+  barchart.py
+  heatmap.py
+  multilayer.py
+  scatter.py
+  __init__.py
+tests
+  test_analysis.py
+  test_forecasting.py
+  test_graph.py
+  test_temporal_betweenness.py
+  test_triadic_closure.py
+  __init__.py
+
+=== CLEANED DATA ===
+email_edges_aggregated_cleaned.csv: cols=['sender', 'recipient', 'weight'], len=4903
+email_edges_cleaned.csv: cols=['sender', 'recipient', 'timestamp', 'department'], len=1102255
+node_departments_cleaned.csv: cols=['node_id', 'department'], len=232
+proximity_edges_cleaned.csv: cols=['i', 'j', 'weight'], len=4274
+
+=== FEATURES CSV ===
+Shape: (198, 11), Cols: ['node', 'degree', 'clustering', 'burt_constraint', 'coleman_homophily', 'cross_closure', 'tb_mean', 'tb_trend', 'tb_final', 'tb_drop', 'label']
+Label counts: {0: 110, 1: 88}
+
+=== MODELS ===
+gbm_model.pkl
+logistic_model.pkl
+shap_values.pkl

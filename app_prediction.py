@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import pickle
-import shap
+
 from pathlib import Path
 
 st.set_page_config(page_title="Node Risk Prediction", layout="wide")
@@ -103,6 +103,27 @@ with tab2:
             st.plotly_chart(fig2, use_container_width=True)
         else:
             st.warning("SHAP shape mismatch with features.")
+            
+        st.markdown("---")
+        st.subheader("Individual Node Explainability (Local SHAP)")
+        node_ids = df["node"].iloc[:len(sv)].tolist()
+        selected_node = st.selectbox("Select Node ID to Explain", node_ids)
+        if selected_node:
+            node_idx = node_ids.index(selected_node)
+            node_sv = sv[node_idx]
+            
+            waterfall_df = pd.DataFrame({
+                "Feature": feature_names,
+                "SHAP Value": node_sv
+            })
+            waterfall_df["Direction"] = waterfall_df["SHAP Value"].apply(lambda x: "Increases Risk" if x > 0 else "Decreases Risk")
+            waterfall_df = waterfall_df.sort_values(by="SHAP Value")
+            
+            fig3 = px.bar(waterfall_df, x="SHAP Value", y="Feature", orientation='h', 
+                          color="Direction", color_discrete_map={"Increases Risk": "#ef553b", "Decreases Risk": "#00cc96"},
+                          title=f"Feature Contributions to Risk Score for {selected_node}")
+            st.plotly_chart(fig3, use_container_width=True)
+
     else:
         st.info("SHAP values not available in the model pickle.")
 
