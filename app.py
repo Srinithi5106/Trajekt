@@ -257,7 +257,7 @@ def smart_render_image(title, icon, path, container, force_live=False):
 smart_render_image("Network Homophily Matrix", "fa-diagram-project", "outputs/stage4_homophily_constraint_scatter.png", col_left)
 smart_render_image("Multilayer Topology Map", "fa-network-wired", "outputs/stage4_multilayer_graph.png", col_right)
 smart_render_image("Closure Velocity Analysis", "fa-infinity", "outputs/stage4_cross_layer_closure.png", col_left)
-smart_render_image("Temporal Activity Heatmap", "fa-fire-flame-curved", "outputs/stage4_temporal_heatmap.png", col_right, force_live=True)
+smart_render_image("Temporal Activity Heatmap", "fa-fire-flame-curved", "outputs/stage4_temporal_heatmap.png", col_right)
 
 # 8. Distribution Intelligence Section
 st.markdown('<div class="glass-card"><h3 style="font-size:0.85rem; margin-bottom:4px;">Distribution Intelligence</h3>', unsafe_allow_html=True)
